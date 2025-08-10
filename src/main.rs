@@ -1,10 +1,27 @@
-use petgraph::{Directed, Graph, graph::NodeIndex};
 use std::{
     fs::{self, File},
     io::Write,
 };
 
 const LETTERS: [char; 12] = ['s', 'l', 'c', 'w', 'i', 'j', 'a', 'g', 'y', 'k', 'o', 'n'];
+
+pub struct Word {
+    pub string: String,
+    pub unique_letters: Vec<char>,
+}
+
+impl Word {
+    pub fn new(string: String) -> Self {
+        let mut unique_letters = string.chars().collect::<Vec<char>>();
+        unique_letters.sort();
+        unique_letters.dedup();
+
+        Self {
+            string,
+            unique_letters,
+        }
+    }
+}
 
 pub fn prune_dictionary(words: Vec<&str>) -> Vec<&str> {
     words
@@ -28,45 +45,34 @@ pub fn prune_dictionary(words: Vec<&str>) -> Vec<&str> {
         .collect::<Vec<&str>>()
 }
 
-pub fn graph(word_list: &Vec<&str>) -> Graph<Vec<char>, ()> {
-    let mut graph =
-        Graph::<Vec<char>, (), Directed>::with_capacity(word_list.len(), word_list.len() * 100);
-
-    for word in word_list.iter() {
-        let mut unique = word.chars().collect::<Vec<char>>();
-        unique.sort_unstable();
-        unique.dedup();
-
-        graph.add_node(unique);
-    }
+pub fn graph(word_list: &Vec<Word>) -> [Vec<usize>; 26] {
+    let mut graph: [Vec<usize>; 26] = Default::default();
 
     for (i, word) in word_list.iter().enumerate() {
-        let end_char = word.chars().last().unwrap();
-        for (j, word) in word_list.iter().enumerate() {
-            let start_char = word.chars().next().unwrap();
-            if end_char == start_char {
-                graph.add_edge(NodeIndex::new(i), NodeIndex::new(j), ());
-            }
-        }
-    }
+        let last_char = word.string.chars().next().unwrap();
+        let char_index = last_char as usize - 'a' as usize;
 
-    graph.shrink_to_fit();
+        graph[char_index].push(i);
+    }
 
     return graph;
 }
 
-pub fn shortest_path(graph: &Graph<Vec<char>, ()>, max_depth: usize) -> Option<Vec<NodeIndex>> {
-    let mut current_depth = graph
-        .node_indices()
-        .map(|index| vec![index])
-        .collect::<Vec<Vec<NodeIndex>>>();
+pub fn shortest_path(
+    graph: &[Vec<usize>; 26],
+    words: &Vec<Word>,
+    max_depth: usize,
+) -> Option<Vec<usize>> {
+    let mut current_depth = (0..words.len())
+        .map(|usize| vec![usize])
+        .collect::<Vec<Vec<usize>>>();
     let mut next_depth = Vec::new();
 
     for _ in 0..max_depth {
         while let Some(path) = current_depth.pop() {
             let mut letters = Vec::new();
-            for index in &path {
-                letters.append(&mut graph.node_weight(*index).unwrap().to_owned());
+            for i in path.clone() {
+                letters.append(&mut words[i].unique_letters.clone());
             }
             letters.sort_unstable();
             letters.dedup();
@@ -75,9 +81,10 @@ pub fn shortest_path(graph: &Graph<Vec<char>, ()>, max_depth: usize) -> Option<V
                 return Some(path);
             }
 
-            for neighbor in graph.neighbors(*path.last().unwrap()) {
+            let last_char = words[*path.last().unwrap()].string.chars().last().unwrap();
+            for neighbor in &graph[last_char as usize - 'a' as usize] {
                 let mut path = path.clone();
-                path.push(neighbor);
+                path.push(*neighbor);
                 next_depth.push(path);
             }
         }
@@ -87,6 +94,51 @@ pub fn shortest_path(graph: &Graph<Vec<char>, ()>, max_depth: usize) -> Option<V
     }
 
     return None;
+}
+
+pub fn shortest_paths(
+    graph: &[Vec<usize>; 26],
+    words: &Vec<Word>,
+    max_depth: usize,
+) -> Vec<Vec<usize>> {
+    let mut current_depth = (0..words.len())
+        .map(|usize| vec![usize])
+        .collect::<Vec<Vec<usize>>>();
+    let mut next_depth = Vec::new();
+
+    let mut paths = Vec::new();
+    let mut found = false;
+    for _ in 0..max_depth {
+        while let Some(path) = current_depth.pop() {
+            let mut letters = Vec::new();
+            for i in path.clone() {
+                letters.append(&mut words[i].unique_letters.clone());
+            }
+            letters.sort_unstable();
+            letters.dedup();
+
+            if letters.len() >= 12 {
+                found = true;
+                paths.push(path.clone());
+            }
+
+            let last_char = words[*path.last().unwrap()].string.chars().last().unwrap();
+            for neighbor in &graph[last_char as usize - 'a' as usize] {
+                let mut path = path.clone();
+                path.push(*neighbor);
+                next_depth.push(path);
+            }
+        }
+
+        if found {
+            break;
+        }
+
+        current_depth = next_depth;
+        next_depth = Vec::with_capacity(current_depth.len());
+    }
+
+    return paths;
 }
 
 fn main() {
@@ -122,25 +174,36 @@ fn main() {
                 return true;
             })
         })
-        .collect::<Vec<&str>>();
+        .map(|str| Word::new(str.to_string()))
+        .collect::<Vec<Word>>();
 
     let graph = graph(&words);
-    println!(
-        "words: {}\nedges: {}",
-        graph.node_count(),
-        graph.edge_count()
-    );
-    let path = shortest_path(&graph, 5);
+    // let path = shortest_path(&graph, &words, 5);
 
-    let Some(path) = path else {
-        println!("No path found");
-        return;
-    };
+    // let Some(path) = path else {
+    //     println!("No path found");
+    //     return;
+    // };
+
+    // println!(
+    //     "{}",
+    //     path.into_iter()
+    //         .map(|i| words[i].string.clone())
+    //         .collect::<Vec<String>>()
+    //         .join(" ")
+    // );
+
+    let paths = shortest_paths(&graph, &words, 5);
     println!(
-        "Shortest path: {}",
-        path.into_iter()
-            .map(|index| words[index.index()])
-            .collect::<Vec<&str>>()
-            .join(" ")
-    );
+        "{}",
+        paths
+            .into_iter()
+            .map(|path| path
+                .into_iter()
+                .map(|i| words[i].string.clone())
+                .collect::<Vec<String>>()
+                .join(" "))
+            .collect::<Vec<String>>()
+            .join("\n")
+    )
 }
