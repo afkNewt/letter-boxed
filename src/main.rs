@@ -40,12 +40,13 @@ pub fn prune_dictionary(words: Vec<&str>) -> Vec<&str> {
                 }
                 last_char = char;
             }
-            return true;
+
+            true
         })
         .collect::<Vec<&str>>()
 }
 
-pub fn graph(word_list: &Vec<Word>) -> [Vec<usize>; 26] {
+pub fn graph(word_list: &[Word]) -> [Vec<usize>; 26] {
     let mut graph: [Vec<usize>; 26] = Default::default();
 
     for (i, word) in word_list.iter().enumerate() {
@@ -55,12 +56,12 @@ pub fn graph(word_list: &Vec<Word>) -> [Vec<usize>; 26] {
         graph[char_index].push(i);
     }
 
-    return graph;
+    graph
 }
 
 pub fn shortest_path(
     graph: &[Vec<usize>; 26],
-    words: &Vec<Word>,
+    words: &[Word],
     max_depth: usize,
 ) -> Option<Vec<usize>> {
     let mut current_depth = (0..words.len())
@@ -93,12 +94,12 @@ pub fn shortest_path(
         next_depth = Vec::with_capacity(current_depth.len());
     }
 
-    return None;
+    None
 }
 
 pub fn shortest_paths(
     graph: &[Vec<usize>; 26],
-    words: &Vec<Word>,
+    words: &[Word],
     max_depth: usize,
 ) -> Vec<Vec<usize>> {
     let mut current_depth = (0..words.len())
@@ -138,7 +139,7 @@ pub fn shortest_paths(
         next_depth = Vec::with_capacity(current_depth.len());
     }
 
-    return paths;
+    paths
 }
 
 fn main() {
@@ -171,7 +172,7 @@ fn main() {
                     return false;
                 }
 
-                return true;
+                true
             })
         })
         .map(|str| Word::new(str.to_string()))
