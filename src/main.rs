@@ -3,7 +3,7 @@ use std::{
     io::Write,
 };
 
-const LETTERS: [char; 12] = ['s', 'l', 'c', 'w', 'i', 'j', 'a', 'g', 'y', 'k', 'o', 'n'];
+const LETTERS: [char; 12] = ['z', 'h', 'i', 'o', 'k', 'q', 'a', 'g', 'm', 'n', 't', 'c'];
 
 pub struct Word {
     pub string: String,
@@ -26,8 +26,8 @@ impl Word {
 pub fn prune_dictionary(words: Vec<&str>) -> Vec<&str> {
     words
         .into_iter()
-        // remove all words of len 3 or less
-        .filter(|word| word.len() > 3)
+        // remove all words of len 2 or less
+        .filter(|word| word.len() > 2)
         // remove all words with non-alpha characters
         .filter(|word| word.chars().all(|char| char.is_alphabetic()))
         // remove all words with repeated characters
@@ -178,21 +178,6 @@ fn main() {
         .collect::<Vec<Word>>();
 
     let graph = graph(&words);
-    // let path = shortest_path(&graph, &words, 5);
-
-    // let Some(path) = path else {
-    //     println!("No path found");
-    //     return;
-    // };
-
-    // println!(
-    //     "{}",
-    //     path.into_iter()
-    //         .map(|i| words[i].string.clone())
-    //         .collect::<Vec<String>>()
-    //         .join(" ")
-    // );
-
     let paths = shortest_paths(&graph, &words, 5);
     println!(
         "{}",
@@ -205,5 +190,5 @@ fn main() {
                 .join(" "))
             .collect::<Vec<String>>()
             .join("\n")
-    )
+    );
 }
