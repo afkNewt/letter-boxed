@@ -3,7 +3,7 @@ use std::{
     io::Write,
 };
 
-const LETTERS: [char; 12] = ['z', 'h', 'i', 'o', 'k', 'q', 'a', 'g', 'm', 'n', 't', 'c'];
+const LETTERS: [char; 12] = ['s', 'y', 'm', 'o', 'p', 'x', 'e', 'i', 'j', 'l', 'f', 'c'];
 
 pub struct Word {
     pub string: String,
